@@ -13,7 +13,7 @@ struct DeskRoot: View {
     @Query(sort: \JobRecord.createdAt, order: .reverse) private var jobs: [JobRecord]
     @Query(sort: \NoteRecord.updatedAt, order: .reverse) private var notes: [NoteRecord]
 
-    @State private var lane: Lane = .school
+    @AppStorage("kaia.lane") private var laneRaw = Lane.school.rawValue
     @State private var tray: Tray?
     @State private var tucked = false
     @State private var pinnedTask: UUID?
@@ -21,27 +21,17 @@ struct DeskRoot: View {
     @State private var leave = false
     @State private var frontName = "Kaia"
 
+    private var lane: Lane { Lane(rawValue: laneRaw) ?? .school }
+    private var laneBinding: Binding<Lane> {
+        Binding(get: { lane }, set: { laneRaw = $0.rawValue })
+    }
     private var openSession: SessionRecord? { sessions.first { $0.isOpen } }
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        Group {
-            if tucked {
-                CapsuleBar(open: openSession, lane: lane, now: now, onClock: clockIn, onBreak: toggleBreak, onOut: clockOut, onUntuck: { tucked = false }, onLeave: { leave = true })
-                    .padding()
-            } else {
-                VStack(spacing: 0) {
-                    topBar
-                    HStack(spacing: 0) {
-                        trayList
-                        focus
-                        if let tray {
-                            TrayHost(tray: tray, lane: lane, tasks: tasks, todos: todos, jobs: jobs, notes: notes, pinned: pinnedTask, onPin: { pinnedTask = $0 }, onClose: { self.tray = nil })
-                                .frame(width: 340)
-                        }
-                    }
-                }
-            }
+        VStack(spacing: 0) {
+            if DeskStore.usedMemoryOnly { memoryBanner }
+            deskBody
         }
         .background(Color(red: 0.937, green: 0.910, blue: 0.863))
         .onReceive(timer) { date in
@@ -71,15 +61,36 @@ struct DeskRoot: View {
         } message: {
             Text(openSession == nil ? "The desk is already saved on this device." : "Clocking out writes the sitting. Keeping the clock means time continues when you come back.")
         }
-        .overlay(alignment: .top) {
-            if DeskStore.usedMemoryOnly {
-                Text("The database didn't open. This sitting stays in memory.")
-                    .font(.footnote)
-                    .padding(8)
-                    .background(.yellow.opacity(0.35), in: Capsule())
-                    .padding(.top, 8)
+    }
+
+    private var deskBody: some View {
+        Group {
+            if tucked {
+                CapsuleBar(open: openSession, lane: lane, now: now, onClock: clockIn, onBreak: toggleBreak, onOut: clockOut, onUntuck: { tucked = false }, onLeave: { leave = true })
+                    .padding()
+            } else {
+                VStack(spacing: 0) {
+                    topBar
+                    HStack(spacing: 0) {
+                        trayList
+                        focus
+                        if let tray {
+                            TrayHost(tray: tray, lane: lane, tasks: tasks, todos: todos, jobs: jobs, notes: notes, pinned: pinnedTask, onPin: { pinnedTask = $0 }, onClose: { self.tray = nil })
+                                .frame(width: 340)
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private var memoryBanner: some View {
+        Text("Kaia couldn't open its database. Everything you enter now stays in memory and will be gone when you quit.")
+            .font(.callout.weight(.medium))
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(10)
+            .background(.yellow.opacity(0.45))
     }
 
     private var topBar: some View {
@@ -87,7 +98,7 @@ struct DeskRoot: View {
             Text("Kaia").font(.custom("Georgia", size: 28)).fontWeight(.semibold)
             Text("work").foregroundStyle(.secondary)
             Spacer()
-            Picker("Lane", selection: $lane) {
+            Picker("Lane", selection: laneBinding) {
                 ForEach(Lane.allCases) { item in
                     Text(item.title).tag(item)
                 }
@@ -162,7 +173,7 @@ struct DeskRoot: View {
                 }
                 ForEach(today) { session in
                     VStack(alignment: .leading) {
-                        Text("\(session.lane.title) · \(format(session.counted(to: now))) counted")
+                        Text("\(session.lane.title) · \(DeskClock.text(session.counted(to: now))) counted")
                         if let task = tasks.first(where: { $0.id == session.taskID }) {
                             Text(task.title).foregroundStyle(.secondary)
                         }
@@ -178,16 +189,7 @@ struct DeskRoot: View {
 
     private var sittingText: String {
         guard let open = openSession else { return "00:00" }
-        return format(now.timeIntervalSince(open.startedAt))
-    }
-
-    private func format(_ interval: TimeInterval) -> String {
-        let total = max(0, Int(interval))
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        let s = total % 60
-        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
-        return String(format: "%02d:%02d", m, s)
+        return DeskClock.text(open.counted(to: now))
     }
 
     private func clockIn() {
@@ -199,24 +201,13 @@ struct DeskRoot: View {
 
     private func toggleBreak() {
         guard let open = openSession else { return }
-        var spans = open.breaks
-        if let index = spans.lastIndex(where: { $0.end == nil }) {
-            spans[index].end = .now
-        } else {
-            spans.append(TimeSpan(start: .now, end: nil))
-        }
-        open.breaks = spans
+        open.toggleBreak()
         try? context.save()
     }
 
     private func clockOut() {
         guard let open = openSession else { return }
-        var spans = open.breaks
-        for index in spans.indices where spans[index].end == nil {
-            spans[index].end = .now
-        }
-        open.breaks = spans
-        open.endedAt = .now
+        open.clockOut()
         try? context.save()
     }
 
@@ -241,6 +232,7 @@ struct DeskRoot: View {
 struct MenuCapsule: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \SessionRecord.startedAt, order: .reverse) private var sessions: [SessionRecord]
+    @AppStorage("kaia.lane") private var laneRaw = Lane.school.rawValue
     @State private var now = Date.now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private var open: SessionRecord? { sessions.first { $0.isOpen } }
@@ -249,13 +241,13 @@ struct MenuCapsule: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(open == nil ? "Ready" : open!.lane.title).font(.headline)
             if let open {
-                Text(Duration.seconds(now.timeIntervalSince(open.startedAt)).formatted(.units(allowed: [.minutes, .seconds], width: .narrow)))
+                Text(DeskClock.text(open.counted(to: now)))
                     .font(.title2.monospacedDigit())
                 Button("Break") { toggle(open) }
                 Button("Clock out") { end(open) }
             } else {
                 Button("Clock in") {
-                    context.insert(SessionRecord(lane: .school, task: nil))
+                    context.insert(SessionRecord(lane: Lane(rawValue: laneRaw) ?? .school, task: nil))
                     try? context.save()
                 }
             }
@@ -272,18 +264,12 @@ struct MenuCapsule: View {
     }
 
     private func toggle(_ open: SessionRecord) {
-        var spans = open.breaks
-        if let index = spans.lastIndex(where: { $0.end == nil }) {
-            spans[index].end = .now
-        } else {
-            spans.append(TimeSpan(start: .now, end: nil))
-        }
-        open.breaks = spans
+        open.toggleBreak()
         try? context.save()
     }
 
     private func end(_ open: SessionRecord) {
-        open.endedAt = .now
+        open.clockOut()
         try? context.save()
     }
 }
@@ -302,7 +288,7 @@ struct CapsuleBar: View {
         HStack {
             VStack(alignment: .leading) {
                 Text(open?.lane.title ?? lane.title).font(.caption)
-                Text(open.map { format(now.timeIntervalSince($0.startedAt)) } ?? "00:00")
+                Text(open.map { DeskClock.text($0.counted(to: now)) } ?? "00:00")
                     .font(.title.monospacedDigit())
             }
             Spacer()
@@ -314,11 +300,6 @@ struct CapsuleBar: View {
             Button("Untuck", action: onUntuck)
             Button("Leave", action: onLeave)
         }
-    }
-
-    private func format(_ interval: TimeInterval) -> String {
-        let total = max(0, Int(interval))
-        return String(format: "%02d:%02d", (total % 3600) / 60, total % 60)
     }
 }
 
@@ -366,14 +347,31 @@ struct TrayHost: View {
                     draft = ""
                     try? context.save()
                 }
-                ForEach(tasks.filter { $0.lane == lane }) { task in
+                ForEach(tasks.filter { $0.lane == lane && $0.status != .done }) { task in
                     VStack(alignment: .leading) {
                         Text(task.title)
                         HStack {
                             Button(pinned == task.id ? "Pinned" : "Pin") { onPin(task.id) }
-                            Button("Done") { task.status = .done; try? context.save() }
+                            Button("Done") {
+                                task.status = .done
+                                if pinned == task.id { onPin(nil) }
+                                try? context.save()
+                            }
                         }
                         .buttonStyle(.borderless)
+                    }
+                }
+                let finished = tasks.filter { $0.lane == lane && $0.status == .done }
+                if !finished.isEmpty {
+                    DisclosureGroup("Done (\(finished.count))") {
+                        ForEach(finished) { task in
+                            HStack {
+                                Text(task.title).foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Reopen") { task.status = .now; try? context.save() }
+                                    .buttonStyle(.borderless)
+                            }
+                        }
                     }
                 }
             case .todos:
@@ -392,7 +390,12 @@ struct TrayHost: View {
                     try? context.save()
                 }
                 ForEach(jobs.filter { $0.lane == lane && !$0.archived }) { job in
-                    Text(job.title)
+                    HStack {
+                        TextField("Job title", text: Bindable(job).title)
+                            .textFieldStyle(.roundedBorder)
+                        Button("Archive") { job.archived = true; try? context.save() }
+                            .buttonStyle(.borderless)
+                    }
                 }
             case .notes, .journal:
                 Button(tray == .journal ? "New page" : "New note") {

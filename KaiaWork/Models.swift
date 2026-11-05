@@ -35,6 +35,17 @@ struct LinkRef: Codable, Hashable {
     var listID: String { "\(kind):\(id.uuidString)" }
 }
 
+enum DeskClock {
+    static func text(_ interval: TimeInterval) -> String {
+        let total = max(0, Int(interval))
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let s = total % 60
+        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
+        return String(format: "%02d:%02d", m, s)
+    }
+}
+
 enum DeskJSON {
     static func encode<T: Encodable>(_ value: T) -> String {
         guard let data = try? JSONEncoder().encode(value), let text = String(data: data, encoding: .utf8) else { return "[]" }
@@ -166,6 +177,25 @@ final class SessionRecord {
     }
 
     var isOpen: Bool { endedAt == nil }
+
+    func toggleBreak(at date: Date = .now) {
+        var spans = breaks
+        if let index = spans.lastIndex(where: { $0.end == nil }) {
+            spans[index].end = date
+        } else {
+            spans.append(TimeSpan(start: date, end: nil))
+        }
+        breaks = spans
+    }
+
+    func clockOut(at date: Date = .now) {
+        var spans = breaks
+        for index in spans.indices where spans[index].end == nil {
+            spans[index].end = date
+        }
+        breaks = spans
+        endedAt = date
+    }
 
     func counted(to now: Date) -> TimeInterval {
         let end = endedAt ?? now
