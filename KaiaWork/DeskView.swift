@@ -20,6 +20,7 @@ struct DeskRoot: View {
     @State private var now = Date.now
     @State private var leave = false
     @State private var frontName = "Kaia"
+    @Environment(\.scenePhase) private var scenePhase
 
     private var lane: Lane { Lane(rawValue: laneRaw) ?? .school }
     private var laneBinding: Binding<Lane> {
@@ -30,12 +31,18 @@ struct DeskRoot: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if DeskStore.usedMemoryOnly { memoryBanner }
             deskBody
+            if let problem = DeskStore.shared.saveProblem { saveNotice(problem) }
         }
         .background(Color(red: 0.937, green: 0.910, blue: 0.863))
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { DeskStore.shared.save(context, reason: "scene phase") }
+        }
         .onReceive(timer) { date in
             now = date
+            if DeskStore.shared.saveProblem != nil, Int(date.timeIntervalSince1970) % 15 == 0 {
+                DeskStore.shared.save(context, reason: "auto retry")
+            }
             #if os(macOS)
             let name = NSWorkspace.shared.frontmostApplication?.localizedName ?? "Kaia"
             frontName = name
@@ -44,7 +51,7 @@ struct DeskRoot: View {
                 if marks.last?.app != name {
                     marks.append(ContextMark(app: name, at: date))
                     open.context = marks
-                    try? context.save()
+                    DeskStore.shared.save(context)
                 }
             }
             #endif
@@ -84,13 +91,14 @@ struct DeskRoot: View {
         }
     }
 
-    private var memoryBanner: some View {
-        Text("Kaia couldn't open its database. Everything you enter now stays in memory and will be gone when you quit.")
-            .font(.callout.weight(.medium))
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .padding(10)
-            .background(.yellow.opacity(0.45))
+    private func saveNotice(_ problem: String) -> some View {
+        HStack {
+            Text(problem).font(.callout)
+            Button("Try again") { DeskStore.shared.save(context, reason: "manual retry") }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(10)
+        .background(Color.primary.opacity(0.08))
     }
 
     private var topBar: some View {
@@ -196,19 +204,19 @@ struct DeskRoot: View {
         guard openSession == nil else { return }
         let task = tasks.first { $0.id == pinnedTask }
         context.insert(SessionRecord(lane: lane, task: task))
-        try? context.save()
+        DeskStore.shared.save(context)
     }
 
     private func toggleBreak() {
         guard let open = openSession else { return }
         open.toggleBreak()
-        try? context.save()
+        DeskStore.shared.save(context)
     }
 
     private func clockOut() {
         guard let open = openSession else { return }
         open.clockOut()
-        try? context.save()
+        DeskStore.shared.save(context)
     }
 
     private func tuck() {
@@ -248,7 +256,7 @@ struct MenuCapsule: View {
             } else {
                 Button("Clock in") {
                     context.insert(SessionRecord(lane: Lane(rawValue: laneRaw) ?? .school, task: nil))
-                    try? context.save()
+                    DeskStore.shared.save(context)
                 }
             }
             #if os(macOS)
@@ -265,12 +273,12 @@ struct MenuCapsule: View {
 
     private func toggle(_ open: SessionRecord) {
         open.toggleBreak()
-        try? context.save()
+        DeskStore.shared.save(context)
     }
 
     private func end(_ open: SessionRecord) {
         open.clockOut()
-        try? context.save()
+        DeskStore.shared.save(context)
     }
 }
 
@@ -345,7 +353,7 @@ struct TrayHost: View {
                     context.insert(task)
                     onPin(task.id)
                     draft = ""
-                    try? context.save()
+                    DeskStore.shared.save(context)
                 }
                 ForEach(tasks.filter { $0.lane == lane && $0.status != .done }) { task in
                     VStack(alignment: .leading) {
@@ -355,7 +363,7 @@ struct TrayHost: View {
                             Button("Done") {
                                 task.status = .done
                                 if pinned == task.id { onPin(nil) }
-                                try? context.save()
+                                DeskStore.shared.save(context)
                             }
                         }
                         .buttonStyle(.borderless)
@@ -368,7 +376,7 @@ struct TrayHost: View {
                             HStack {
                                 Text(task.title).foregroundStyle(.secondary)
                                 Spacer()
-                                Button("Reopen") { task.status = .now; try? context.save() }
+                                Button("Reopen") { task.status = .now; DeskStore.shared.save(context) }
                                     .buttonStyle(.borderless)
                             }
                         }
@@ -378,7 +386,7 @@ struct TrayHost: View {
                 capture("New todo") {
                     context.insert(TodoRecord(title: draft, lane: lane))
                     draft = ""
-                    try? context.save()
+                    DeskStore.shared.save(context)
                 }
                 ForEach(todos.filter { $0.lane == lane }) { todo in
                     Toggle(todo.title, isOn: Bindable(todo).done)
@@ -387,20 +395,20 @@ struct TrayHost: View {
                 capture("New job") {
                     context.insert(JobRecord(title: draft, lane: lane))
                     draft = ""
-                    try? context.save()
+                    DeskStore.shared.save(context)
                 }
                 ForEach(jobs.filter { $0.lane == lane && !$0.archived }) { job in
                     HStack {
                         TextField("Job title", text: Bindable(job).title)
                             .textFieldStyle(.roundedBorder)
-                        Button("Archive") { job.archived = true; try? context.save() }
+                        Button("Archive") { job.archived = true; DeskStore.shared.save(context) }
                             .buttonStyle(.borderless)
                     }
                 }
             case .notes, .journal:
                 Button(tray == .journal ? "New page" : "New note") {
                     context.insert(NoteRecord(kind: tray == .journal ? "journal" : "note"))
-                    try? context.save()
+                    DeskStore.shared.save(context)
                 }
                 ForEach(notes.filter { $0.kind == (tray == .journal ? "journal" : "note") }) { note in
                     TextField("Title", text: Bindable(note).title)
@@ -415,7 +423,7 @@ struct TrayHost: View {
         }
         .padding()
         .background(.white.opacity(0.72))
-        .onDisappear { try? context.save() }
+        .onDisappear { DeskStore.shared.save(context) }
     }
 
     private func capture(_ placeholder: String, add: @escaping () -> Void) -> some View {

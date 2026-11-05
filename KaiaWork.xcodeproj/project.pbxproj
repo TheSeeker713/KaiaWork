@@ -7,6 +7,7 @@
 
 /* Begin PBXFileReference section */
 		AA00000000000000000000A1 /* KaiaWork.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KaiaWork.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA00000000000000000000T1 /* KaiaWorkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KaiaWorkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -15,10 +16,32 @@
 			path = KaiaWork;
 			sourceTree = "<group>";
 		};
+		AA00000000000000000000T2 /* KaiaWorkTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KaiaWorkTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXContainerItemProxy section */
+		AA00000000000000000000T3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA00000000000000000000E2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA00000000000000000000E1;
+			remoteInfo = KaiaWork;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		AA00000000000000000000C1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA00000000000000000000T4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -32,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				AA00000000000000000000B1 /* KaiaWork */,
+				AA00000000000000000000T2 /* KaiaWorkTests */,
 				AA00000000000000000000D2 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				AA00000000000000000000A1 /* KaiaWork.app */,
+				AA00000000000000000000T1 /* KaiaWorkTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,6 +93,28 @@
 			productReference = AA00000000000000000000A1 /* KaiaWork.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AA00000000000000000000T5 /* KaiaWorkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA00000000000000000000T6 /* Build configuration list for PBXNativeTarget "KaiaWorkTests" */;
+			buildPhases = (
+				AA00000000000000000000T7 /* Sources */,
+				AA00000000000000000000T4 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA00000000000000000000T8 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA00000000000000000000T2 /* KaiaWorkTests */,
+			);
+			name = KaiaWorkTests;
+			packageProductDependencies = (
+			);
+			productName = KaiaWorkTests;
+			productReference = AA00000000000000000000T1 /* KaiaWorkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -79,6 +126,10 @@
 				TargetAttributes = {
 					AA00000000000000000000E1 = {
 						CreatedOnToolsVersion = 16.2;
+					};
+					AA00000000000000000000T5 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = AA00000000000000000000E1;
 					};
 				};
 			};
@@ -97,6 +148,7 @@
 			projectRoot = "";
 			targets = (
 				AA00000000000000000000E1 /* KaiaWork */,
+				AA00000000000000000000T5 /* KaiaWorkTests */,
 			);
 		};
 /* End PBXProject section */
@@ -109,14 +161,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA00000000000000000000T7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AA00000000000000000000T8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA00000000000000000000E1 /* KaiaWork */;
+			targetProxy = AA00000000000000000000T3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AA00000000000000000000G1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -133,7 +200,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.00.03;
+				MARKETING_VERSION = 0.00.04;
 				PRODUCT_BUNDLE_IDENTIFIER = com.myceliainteractive.KaiaWork;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -148,7 +215,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -165,7 +232,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.00.03;
+				MARKETING_VERSION = 0.00.04;
 				PRODUCT_BUNDLE_IDENTIFIER = com.myceliainteractive.KaiaWork;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -213,6 +280,54 @@
 			};
 			name = Release;
 		};
+		AA00000000000000000000T9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.00.04;
+				PRODUCT_BUNDLE_IDENTIFIER = com.myceliainteractive.KaiaWorkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaiaWork.app/Contents/MacOS/KaiaWork";
+			};
+			name = Debug;
+		};
+		AA00000000000000000000TA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.00.04;
+				PRODUCT_BUNDLE_IDENTIFIER = com.myceliainteractive.KaiaWorkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaiaWork.app/Contents/MacOS/KaiaWork";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -230,6 +345,15 @@
 			buildConfigurations = (
 				AA00000000000000000000G3 /* Debug */,
 				AA00000000000000000000G4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA00000000000000000000T6 /* Build configuration list for PBXNativeTarget "KaiaWorkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000T9 /* Debug */,
+				AA00000000000000000000TA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
