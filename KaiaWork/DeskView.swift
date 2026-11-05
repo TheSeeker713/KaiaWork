@@ -1,3 +1,4 @@
+import Combine
 import SwiftData
 import SwiftUI
 #if os(macOS)
@@ -414,7 +415,7 @@ struct TrayHost: View {
         .onDisappear { try? context.save() }
     }
 
-    private func capture(_ placeholder: String, add: () -> Void) -> some View {
+    private func capture(_ placeholder: String, add: @escaping () -> Void) -> some View {
         HStack {
             TextField(placeholder, text: $draft)
                 .textFieldStyle(.roundedBorder)
